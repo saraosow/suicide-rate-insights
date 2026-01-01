@@ -1,16 +1,10 @@
-'''
-Sara Osowski
-Python Final Project
-'''
-
 import pandas as pd
 import numpy as np
 import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
-#!pip install geonamescache
 import geonamescache
 
-suicides_data = pd.read_csv(r'/Users/saraosowski/Documents/Python/master.csv')
+suicides_data = pd.read_csv(r'/Users/saraosowski/Documents/GitHub/suicide-rate-insights/master.csv')
 suicides_data.head()
 
 
@@ -45,9 +39,15 @@ data['continentcode'] = data['continentcode'].replace({'EU':'Europe',
 #convert columns to catgegory data type
 data['continentcode'] = pd.Categorical(data['continentcode'])
 data['age'] = pd.Categorical(data['age'])
-data['age'].cat.reorder_categories(['5-14 years','15-24 years','25-34 years','35-54 years','55-74 years','75+ years'], inplace = True)
+data['age'] = data['age'].cat.reorder_categories(
+    ['5-14 years','15-24 years','25-34 years','35-54 years','55-74 years','75+ years'],
+    ordered=True
+)
 data['generation'] = pd.Categorical(data['generation'])
-data['generation'].cat.reorder_categories(['G.I. Generation','Silent','Boomers','Generation X','Millenials','Generation Z'],inplace = True)
+data['generation'] = data['generation'].cat.reorder_categories(
+    ['G.I. Generation','Silent','Boomers','Generation X','Millenials','Generation Z'],
+    ordered=True
+)
 data['country'] = pd.Categorical(data['country'])
 data['sex'] = pd.Categorical(data['sex'])
 data.rename(columns = {'continentcode':'continent'},inplace = True)
@@ -77,7 +77,7 @@ men = data.groupby('sex').suicides_no.sum().male/data.groupby('sex').suicides_no
 print(men)
 
 #top 15 total suicides per country
-totalSui = data.groupby('country').sum().suicides_no
+totalSui = data.groupby('country')['suicides_no'].sum()
 tot15 = totalSui.nlargest(15)
 print(tot15)
 
@@ -86,9 +86,9 @@ class plotting:
     
     #men v women for a specific country
     def gender(country):
-        country = data[data['country']  == country]
-        country.groupby('sex').suicides_no.sum()
-        men = country.groupby('sex').suicides_no.sum().male/country.groupby('sex').suicides_no.sum().female 
+        country = data[data['country'] == country]
+        sex_sums = country.groupby('sex')['suicides_no'].sum()
+        men = sex_sums['male'] / sex_sums['female']
         print(men)
     
     #top 15 countries with highest suicides/100k pop for an age group
@@ -125,8 +125,9 @@ plotting.gender('United States')
 
 #total suicides per age group
 plt.figure(figsize = (10,5))
-age = data.groupby('age').sum().suicides_no.reset_index().age
-suicides_gen = data.groupby('age').sum().suicides_no.values
+age_group_sum = data.groupby('age')['suicides_no'].sum().reset_index()
+age = age_group_sum['age']
+suicides_gen = age_group_sum['suicides_no']
 sns.barplot(x = age,y = suicides_gen)
 plt.xlabel('Age')
 plt.title('Number of Total Suicides by Age Group (in millions)')
